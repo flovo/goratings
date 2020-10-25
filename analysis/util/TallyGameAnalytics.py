@@ -347,6 +347,33 @@ class TallyGameAnalytics:
         with open(fname, "w") as f:
             json.dump(data, f)
 
+    def print_median_games_per_timewindow(self):
+        day = 24*3600
+        print("| window | num_games | rating days |")
+        print("|-------:|----------:|------------:|")
+        for window in range(day, (2 * 28 + 1) * day, day):
+            num_games = []
+            for player_id in self.storage._rating_history:
+                history = self.storage._rating_history[player_id]
+                if len(history) == 0:
+                    continue
+                if len(history) < 30:
+                    continue
+                window_start = (history[0][0] // window) * window
+                num_games_in_window = 0;
+                for game in history:
+                    timestamp = game[0]
+                    if timestamp >= window_start + window:
+                        if num_games_in_window > 0:
+                            num_games.append(num_games_in_window)
+                            num_games_in_window = 0
+                            window_start = (timestamp // window) * window
+                    num_games_in_window += 1
+                if num_games_in_window > 0:
+                    num_games.append(num_games_in_window)
+            num_games.sort()
+            print(f"| {window // day:6d} | {num_games[len(num_games) // 2]:9d} | {len(num_games) * (window // day):11d} |")
+
 
 def num2rank(num: float) -> str:
     if isnan(num) or (not num and num != 0):
